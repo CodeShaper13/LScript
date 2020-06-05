@@ -1,0 +1,27 @@
+red = 0
+blue = 1
+green = 2
+magenta = 3
+cyan = 4
+yellow = 5
+white = 6
+black = 7
+
+two bricks = 64 possible values
+
+Commands:
+define function
+end function
+
+define variable
+
+
+
+2
+4
+8
+16
+32
+64
+128
+256
