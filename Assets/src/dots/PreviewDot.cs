@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using LScript;
 
 [RequireComponent(typeof(RawImage))]
 public class PreviewDot : MonoBehaviour {
@@ -7,7 +8,7 @@ public class PreviewDot : MonoBehaviour {
     private RawImage img;
     private BrickColorList colorList;
 
-    private TokenColor tokenColor = TokenColor.RED;
+    private BrickColor tokenColor = BrickColor.RED;
 
     private void Awake() {
         this.img = this.GetComponent<RawImage>();
@@ -28,7 +29,7 @@ public class PreviewDot : MonoBehaviour {
         this.img.color = this.colorList.colorFromToken(this.tokenColor);
     }
 
-    public TokenColor getToken() {
+    public BrickColor getToken() {
         return this.tokenColor;
     }
 }
