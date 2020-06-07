@@ -1,9 +1,10 @@
 ﻿using System;
+
 namespace LScript {
 
         public static class BlockConverter {
 
-        private static readonly char[] characters = new char[] {
+        public static readonly char[] characters = new char[] {
             // Numbers:
             '0',
             '1',
@@ -105,9 +106,6 @@ namespace LScript {
             '`',
             '~',
             '^',
-            ' ',
-            ' ',
-            ' ',
             // Escape Characters
             '\t',
             '\n',
@@ -117,11 +115,15 @@ namespace LScript {
             return (int)color;
         }
 
-        public static char blocksToChar(BrickColor c1, BrickColor c2) {
-            int n1 = blockToNumber(c1);
-            int n2 = blockToNumber(c2);
+        public static int tokenToNumber(Token token) {
+            int n1 = blockToNumber(token.first);
+            int n2 = blockToNumber(token.second);
 
-            int index = n1 * 10 + n2;
+            return n1 * 10 + n2;
+        }
+
+        public static char tokenToChar(Token token) {
+            int index = BlockConverter.tokenToNumber(token);
 
             if(index < 0 || index >= characters.Length) {
                 throw new Exception("Index out of range");
