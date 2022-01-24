@@ -29,7 +29,7 @@ public class DebugRunner : MonoBehaviour {
 
         for(int i = 0; i < TokenConverter.characters.Length; i++) {
             w.WriteLine(string.Format(
-                "{0} = {1} {2}",
+                "{0}  =  `{1} {2}`\n",
                 TokenConverter.characters[i],
                 (BrickColor)this.getIndividualDigits(i, 0),
                 (BrickColor)this.getIndividualDigits(i, 1)));
