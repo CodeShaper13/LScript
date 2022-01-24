@@ -1,5 +1,8 @@
 ﻿namespace LScript {
 
+    /// <summary>
+    /// All of the brick colors recognized by LScript.
+    /// </summary>
     public enum BrickColor {
 
         RED = 0,

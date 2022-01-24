@@ -4,30 +4,24 @@ using UnityEngine.UI;
 public class WebCamImage : MonoBehaviour {
 
     [SerializeField]
-    public RawImage rawImage = null;
+    public RawImage _rawImage = null;
     [SerializeField]
-    private AspectRatioFitter aspectRatioFilter = null;
+    private AspectRatioFitter _aspectRatioFilter = null;
+    [SerializeField, Tooltip("The index of the Camera to use."), Min(0)]
+    private int _startCameraIndex = 0;
     [SerializeField]
-    private bool correctRotation = true;
-    [SerializeField]
-    [Tooltip("The index of hte Camera to use.  If this number is greater than the camera count, the highest one is used.")]
-    private int startCameraIndex = 0;
+    private FilterMode _cameraFilterMode = FilterMode.Trilinear;
 
     /// <summary> The selected device index. </summary>
     private int indexDevice = -1;
-    private Vector3 rotationVector = new Vector3(0f, 0f, 0f);
 
-
-    public bool playing {
-        get {
-            return this.webcamTexture == null ? false : this.webcamTexture.isPlaying;
-        }
+    public bool isPlaying {
+        get => this.webcamTexture == null ? false : this.webcamTexture.isPlaying;
         set {
             if(this.webcamTexture != null) {
                 if(value) {
                     this.webcamTexture.Play();
-                }
-                else {
+                } else {
                     this.webcamTexture.Stop();
                 }
             }
@@ -35,72 +29,54 @@ public class WebCamImage : MonoBehaviour {
     }
 
     public int cameraIndex {
-        get {
-            return this.indexDevice;
-        }
-        set {
-            this.setCamera(value);
-        }
+        get => this.indexDevice;
+        set { this.setCamera(value); }
     }
 
     public WebCamTexture webcamTexture { get; private set; } = null;
 
-    public CamState state {
+    public EnumCameraState state {
         get {
             if(!Application.HasUserAuthorization(UserAuthorization.WebCam)) {
-                return CamState.NO_AUTHORIZATION;
+                return EnumCameraState.NO_AUTHORIZATION;
             }
             else if(WebCamTexture.devices == null || WebCamTexture.devices.Length == 0) {
-                return CamState.NO_CAMERAS;
+                return EnumCameraState.NO_CAMERAS;
             }
             else {
-                return CamState.OK;
+                return EnumCameraState.OK;
             }
         }
     }
 
-    private void Awake() {
+    private void Start() {
         Application.RequestUserAuthorization(UserAuthorization.WebCam);
     }
 
     private void Update() {
-        if(this.state == CamState.OK) {
+        if(this.state == EnumCameraState.OK) {
 
             // Once the camera's have been located, start using the first one.
             if(this.indexDevice == -1 && WebCamTexture.devices.Length > 0) {
-                int i = this.startCameraIndex;
-                if(i > WebCamTexture.devices.Length) {
-                    i = 0;
-                }
-                this.setCamera(i);
+                this.setCamera(Mathf.Clamp(this._startCameraIndex, 0, WebCamTexture.devices.Length));
             }
 
-            if(null != this.webcamTexture && this.webcamTexture.didUpdateThisFrame) {
-                this.rawImage.texture = webcamTexture;
+            if(this.isPlaying && this.webcamTexture.didUpdateThisFrame) {
+                // Rotate the raw image to the correct orientation.
+                this._rawImage.transform.localEulerAngles = new Vector3(0, 0, -this.webcamTexture.videoRotationAngle);
 
-                // Rotate image to show correct orientation.
-                if(this.correctRotation) {
-                    rotationVector.z = -this.webcamTexture.videoRotationAngle;
-                    this.rawImage.rectTransform.localEulerAngles = rotationVector;
-                }
+                // adjust the size of the camera.
+                RectTransform rt = this.GetComponent<RectTransform>();
+                rt.sizeDelta = new Vector2(this.GetComponentInParent<CanvasScaler>().referenceResolution.y, 0);
 
-                // Set AspectRatioFitter's ratio.
-                if(this.aspectRatioFilter != null) {
+                // Update the AspectRatioFitter's ratio.
+                if(this._aspectRatioFilter != null) {
                     float videoRatio = ((float)this.webcamTexture.width) / this.webcamTexture.height;
-                    this.aspectRatioFilter.aspectRatio = videoRatio;
+                    this._aspectRatioFilter.aspectRatio = videoRatio;
                 }
-
-                Vector3 defaultScale = new Vector3(1f, 1f, 1f);
-                Vector3 fixedScale = new Vector3(-1f, 1f, 1f);
 
                 // Unflip if vertically flipped
-                this.rawImage.uvRect =
-                    this.webcamTexture.videoVerticallyMirrored ? new Rect(0f, 1f, 1f, -1f) : new Rect(0f, 0f, 1f, 1f);
-
-                // Mirror front-facing camera's image horizontally to look more natural
-                //if(this.mirrorFrontCam) {
-                //    imageParent.localScale = activeCameraDevice.isFrontFacing ? new Vector3(-1f, 1f, 1f) : new Vector3(1f, 1f, 1f);
-                //}
+                //this._rawImage.uvRect = this.webcamTexture.videoVerticallyMirrored ? new Rect(0f, 1f, 1f, -1f) : new Rect(0f, 0f, 1f, 1f);
             }
         }
     }
@@ -117,22 +93,34 @@ public class WebCamImage : MonoBehaviour {
 
         // Cleanup the old camera.
         if(this.webcamTexture != null) {
-            this.playing = false;
+            this.isPlaying = false;
 
             // Destroy the old render texture.
             GameObject.DestroyImmediate(this.webcamTexture, true);
         }
 
         this.webcamTexture = new WebCamTexture(WebCamTexture.devices[index].name);
-        //this.webcamTexture.filterMode = FilterMode.Trilinear; // Make smoother
+        this.webcamTexture.filterMode = this._cameraFilterMode;
 
         // start playing
-        this.playing = true;
+        this.isPlaying = true;
 
-        this.rawImage.texture = webcamTexture;
+        this._rawImage.texture = this.webcamTexture;
     }
 
-    public enum CamState {
+    /// <summary>
+    /// Cycles to the next camera on the device.
+    /// </summary>
+    public void nextCamera() {
+        int index = this.cameraIndex + 1;
+        if(index >= WebCamTexture.devices.Length) {
+            index = 0;
+        }
+
+        this.cameraIndex = index;
+    }
+
+    public enum EnumCameraState {
         NO_AUTHORIZATION = 0,
         NO_CAMERAS = 1,
         OK = 2,
